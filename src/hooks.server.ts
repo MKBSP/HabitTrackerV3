@@ -5,6 +5,10 @@ import {
   PUBLIC_SUPABASE_URL,
 } from "$env/static/public";
 
+// Log the environment variables to verify they are loaded correctly
+console.log('PUBLIC_SUPABASE_URL:', PUBLIC_SUPABASE_URL);
+console.log('PUBLIC_SUPABASE_ANON_KEY:', PUBLIC_SUPABASE_ANON_KEY);
+
 export const handle = async ({ event, resolve }) => {
   /**
    * Creates a Supabase client specific to this server request.
