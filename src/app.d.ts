@@ -1,5 +1,8 @@
 import type { Session, SupabaseClient, User } from "@supabase/supabase-js";
 
+/// <reference types="@sveltejs/kit" />
+/// <reference types="svelte" />
+
 declare global {
   namespace App {
     // interface Error {}

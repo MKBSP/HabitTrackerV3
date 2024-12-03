@@ -1,9 +1,8 @@
 import { getOrCreateUserProfile } from "$lib/auth";
-import { db } from "$lib/db/index.js";
-import { profileTable } from "$lib/db/schema.js";
-import { error } from "@sveltejs/kit";
+import { error, fail, redirect } from "@sveltejs/kit";
 import { eq } from "drizzle-orm";
 import { zfd } from "zod-form-data";
+import type { Actions } from './$types';
 
 export const load = async ({ locals }) => {
   const userProfile = await getOrCreateUserProfile(locals);
@@ -13,32 +12,35 @@ export const load = async ({ locals }) => {
   };
 };
 
-export const actions = {
-  default: async ({ request, locals }) => {
-    const userProfile = await getOrCreateUserProfile(locals);
+export const actions: Actions = {
+  default: async ({ request, locals: { supabase } }) => {
+    const formData = await request.formData();
+    const email = formData.get('email') as string;
+    const password = formData.get('password') as string;
+    const isSignUp = formData.get('isSignUp') === 'true';
 
-    if (!userProfile) {
-      error(401, "You need to be logged in!");
+    if (isSignUp) {
+      const { error } = await supabase.auth.signUp({
+        email,
+        password,
+      });
+
+      if (error) {
+        return fail(400, { error: error.message });
+      }
+
+      return { success: true };
+    } else {
+      const { error } = await supabase.auth.signInWithPassword({
+        email,
+        password,
+      });
+
+      if (error) {
+        return fail(400, { error: error.message });
+      }
+
+      throw redirect(303, '/dashboard');
     }
-
-    const schema = zfd.formData({
-      firstName: zfd.text(),
-      lastName: zfd.text(),
-      email: zfd.text(),
-    });
-
-    const { data } = schema.safeParse(await request.formData());
-
-    if (!data) {
-      error(400, "Invalid form data");
-    }
-
-    await db.update(profileTable).set({
-      firstName: data.firstName,
-      lastName: data.lastName,
-      email: data.email,
-    }).where(eq(profileTable.id, userProfile.id));
-
-    return { success: true };
-  },
+  }
 };
