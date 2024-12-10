@@ -1,11 +1,10 @@
 import { redirect } from '@sveltejs/kit';
 
+const PUBLIC_ROUTES = new Set(['/auth/login', '/auth/signup', '/']);
+
 export const load = async ({ url, locals: { safeGetSession } }) => {
     const { session, user } = await safeGetSession();
-
-    // Public routes that don't require authentication
-    const publicRoutes = ['/auth/login', '/auth/signup', '/'];
-    const isPublicRoute = publicRoutes.includes(url.pathname);
+    const isPublicRoute = PUBLIC_ROUTES.has(url.pathname);
 
     if (!session && !isPublicRoute) {
         throw redirect(303, '/auth/login');
@@ -15,8 +14,5 @@ export const load = async ({ url, locals: { safeGetSession } }) => {
         throw redirect(303, '/dashboard');
     }
 
-    return {
-        session,
-        user
-    };
+    return { session, user };
 };

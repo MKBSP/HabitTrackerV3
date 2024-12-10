@@ -1,17 +1,16 @@
 <script lang="ts">
-	import Hero from '$lib/components/Hero.svelte';
-	import UpdateProfile from '$lib/components/UpdateProfile.svelte';
+    import { goto } from '$app/navigation';
+    import { page } from '$app/stores';
+    import { onMount } from 'svelte';
+    import Hero from '$lib/components/Hero.svelte';
 
-	export let data;
-	let avatar: string;
+    let { data } = $props();
 
-	// Reactive statement to update avatar when data changes
-	$: userProfile = data?.userProfile || '';
-	$: avatar = data?.user?.user_metadata?.avatar_url || '';
+    onMount(() => {
+        if (data?.session) {
+            goto('/dashboard');
+        }
+    });
 </script>
 
-{#if data?.userProfile}
-	<UpdateProfile {userProfile} {avatar} />
-{:else}
-	<Hero />
-{/if}
+<Hero />
