@@ -31,7 +31,7 @@
 
     // Replace reactive classes with $derived
     let cardClasses = $derived(cn(
-        "transition-all duration-300 ease-in-out",
+        "transition-all duration-300 ease-in-out habit-card",
         isCollapsed ? "scale-95 opacity-75 py-2" : "scale-100 opacity-100 py-4"
     ));
 
@@ -71,11 +71,18 @@
 </script>
 
 <Card class={cardClasses}>
-    <CardHeader class="flex flex-row items-center space-y-0 pb-2">
+    <CardHeader class={cn(
+        "flex flex-row items-center space-y-0",
+        isCollapsed 
+            ? "pb-1 pt-1" // Reduced padding when collapsed
+            : "pb-2 pt-2"  // Normal padding when expanded
+    )}>
         <div class="flex-1 transition-all duration-300">
             <h3 class={cn(
                 "font-semibold leading-none tracking-tight",
-                isCollapsed && "text-muted-foreground"
+                isCollapsed 
+                    ? "text-sm text-muted-foreground" // Smaller text when collapsed
+                    : "text-base" // Normal text size when expanded
             )}>{title}</h3>
             {#if !isCollapsed}
                 <p class="text-sm text-muted-foreground mt-1" transition:slide>{description}</p>

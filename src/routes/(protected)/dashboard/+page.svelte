@@ -8,12 +8,12 @@
     let loading = $state(false);
     let error = $state<string | null>(null);
 
-    async function fetchHabits() {
+    async function fetchHabits(date = new Date().toISOString()) {
         const { supabase } = $page.data;
         const userId = $page.data.session?.user.id;
-        const today = new Date().toISOString().split('T')[0];
+        const targetDate = date.split('T')[0];
         
-        console.log('[Dashboard] Fetching habits for date:', today);
+        console.log('[Dashboard] Fetching habits for date:', targetDate);
 
         // First get user habits
         const { data: userHabits, error: userHabitsError } = await supabase
@@ -31,8 +31,8 @@
             .from('Habit_Completion')
             .select('*')
             .in('user_habit_id', userHabits.map(h => h.id))
-            .gte('completed_at', today)
-            .lt('completed_at', new Date(new Date(today).getTime() + 24*60*60*1000).toISOString())
+            .gte('completed_at', targetDate)
+            .lt('completed_at', new Date(new Date(targetDate).getTime() + 24*60*60*1000).toISOString())
             .order('created_at', { ascending: false });
 
         console.log('[Dashboard] Raw completions:', completions);
@@ -121,6 +121,10 @@
             // No need to revert state as we're not updating it until after success
         }
     }
+
+    function handleDateChange(event: CustomEvent<{date: string}>) {
+        fetchHabits(event.detail.date);
+    }
 </script>
 
 <div class="container mx-auto py-6">
@@ -134,6 +138,7 @@
                 {habits} 
                 on:complete={handleComplete}
                 on:refresh={fetchHabits}
+                on:dateChange={handleDateChange}
             />
         </Card.Content>
     </Card.Root>

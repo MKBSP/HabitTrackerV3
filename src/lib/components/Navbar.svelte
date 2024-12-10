@@ -6,17 +6,25 @@
     import { dev } from '$app/environment';
     import { goto } from '$app/navigation';
 
-    let session = null;
-    let user = null;
+    // Convert to $state
+    let session = $state(null);
+    let user = $state(null);
 
     onMount(async () => {
         const { supabase } = $page.data;
+        
+        // Wait for session to be available
+        while (!$page.data.session) {
+            await new Promise(resolve => setTimeout(resolve, 100));
+        }
+        
+        session = $page.data.session;
+        
         // Get authenticated user data
         const { data: userData, error } = await supabase.auth.getUser();
         if (error && dev) console.error('Auth error:', error);
         user = userData?.user;
-        session = $page.data.session;
-
+        
         // Subscribe to auth changes
         const { subscription } = supabase.auth.onAuthStateChange(
             async (event, _session) => {

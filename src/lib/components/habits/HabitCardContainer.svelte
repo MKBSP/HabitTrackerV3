@@ -4,7 +4,7 @@
     import { createEventDispatcher } from 'svelte';
     import Button from '../ui/button/button.svelte';
     import HabitSearchModal from '../HabitSearchModal.svelte';
-    import { Plus } from "lucide-svelte";
+    import { Plus, ChevronLeft, ChevronRight } from "lucide-svelte";
 
     type Habit = {
         id: number;
@@ -50,6 +50,7 @@
     });
 
     let showAddModal = $state(false);
+    let currentDate = $state(new Date());
 
     function toggleModal(value: boolean) {
         console.log('[HabitCardContainer] Toggling modal:', value);
@@ -61,18 +62,62 @@
         showAddModal = false;
         dispatch('refresh');
     }
+
+    function formatDate(date: Date) {
+        return date.toLocaleDateString('en-US', { 
+            weekday: 'short', 
+            month: 'short', 
+            day: 'numeric' 
+        });
+    }
+    
+    function changeDate(days: number) {
+        const newDate = new Date(currentDate);
+        newDate.setDate(currentDate.getDate() + days);
+        
+        // Don't allow future dates
+        if (newDate > new Date()) return;
+        
+        currentDate = newDate;
+        dispatch('dateChange', { date: newDate.toISOString() });
+    }
 </script>
 
 <div class="w-1/2 mx-auto">
-    <Card.Root>
-        <Card.Header class="flex flex-row items-center justify-between">
-            <div>
-                <Card.Title>Today's Habits</Card.Title>
-                <Card.Description>Track your daily progress</Card.Description>
+    <Card.Root class="card">
+        <Card.Header class="flex flex-col space-y-2">
+            <div class="flex items-center justify-between w-full">
+                <div>
+                    <Card.Title>Today's Habits</Card.Title>
+                    <Card.Description>Track your daily progress</Card.Description>
+                </div>
+                <Button variant="outline" size="icon" on:click={() => toggleModal(true)}>
+                    <Plus class="h-4 w-4" />
+                </Button>
             </div>
-            <Button variant="outline" size="icon" on:click={() => toggleModal(true)}>
-                <Plus class="h-4 w-4" />
-            </Button>
+            
+            <div class="flex items-center justify-center gap-4 text-sm">
+                <Button 
+                    variant="ghost" 
+                    size="icon" 
+                    class="hover:bg-secondary/90"
+                    on:click={() => changeDate(-1)}
+                >
+                    <ChevronLeft class="h-4 w-4" />
+                </Button>
+                
+                <span class="text-muted">
+                    {formatDate(currentDate)}
+                </span>
+                
+                <Button 
+                    variant="ghost" 
+                    size="icon" 
+                    on:click={() => changeDate(1)}
+                >
+                    <ChevronRight class="h-4 w-4" />
+                </Button>
+            </div>
         </Card.Header>
         <Card.Content class="space-y-4 max-h-[600px] overflow-y-auto">
             {#each habits as habit (habit.id)}
