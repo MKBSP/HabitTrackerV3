@@ -1,13 +1,13 @@
 import { error } from "@sveltejs/kit";
 
-export const getOrCreateUserProfile = async (locals: App.Locals) => {
-    const { user } = await locals.safeGetSession();
+export const getOrCreateUserProfile = async ({ getUser, supabase }: App.Locals) => {
+    const user = await getUser();
 
     if (!user) {
         return null;
     }
 
-    const { data: profile, error: profileError } = await locals.supabase
+    const { data: profile, error: profileError } = await supabase
         .from('Profiles')
         .select('*')
         .eq('id', user.id)
@@ -18,7 +18,7 @@ export const getOrCreateUserProfile = async (locals: App.Locals) => {
     }
 
     // If profile doesn't exist, create it
-    const { data: newProfile, error: insertError } = await locals.supabase
+    const { data: newProfile, error: insertError } = await supabase
         .from('Profiles')
         .insert([
             {

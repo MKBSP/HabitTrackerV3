@@ -14,8 +14,8 @@
 	},
 	"devDependencies": {
 		"@sveltejs/adapter-auto": "^3.0.0",
-		"@sveltejs/kit": "^2.9.0",
-		"@sveltejs/vite-plugin-svelte": "^4.0.0-next.6",
+		"@sveltejs/kit": "^2.0.0",
+		"@sveltejs/vite-plugin-svelte": "^3.0.0",
 		"@types/eslint": "^8.56.0",
 		"@typescript-eslint/eslint-plugin": "^7.0.0",
 		"@typescript-eslint/parser": "^7.0.0",
@@ -29,7 +29,7 @@
 		"prettier-plugin-svelte": "^3.1.2",
 		"prettier-plugin-tailwindcss": "^0.5.14",
 		"supabase": "^1.226.3",
-		"svelte": "^5.0.0-beta.1",
+		"svelte": "^4.2.19",
 		"svelte-check": "^3.6.0",
 		"tailwindcss": "^3.4.3",
 		"tslib": "^2.4.1",
@@ -40,7 +40,7 @@
 	"dependencies": {
 		"@iconify/svelte": "^4.0.2",
 		"@supabase/ssr": "^0.3.0",
-		"@supabase/supabase-js": "^2.43.4",
+		"@supabase/supabase-js": "^2.39.0",
 		"bits-ui": "^0.21.10",
 		"clsx": "^2.1.1",
 		"drizzle-orm": "^0.30.10",
@@ -50,9 +50,9 @@
 		"tailwind-merge": "^2.3.0",
 		"tailwind-variants": "^0.2.1",
 		"zod": "^3.23.8",
-		"zod-form-data": "^2.0.2"
-	},
-	"overrides": {
-		"@sveltejs/vite-plugin-svelte": "^4.0.0-next.6"
+		"zod-form-data": "^2.0.2",
+		"@supabase/auth-helpers-sveltekit": "^0.10.7",
+		"@supabase/auth-ui-shared": "^0.1.8",
+		"@supabase/auth-ui-svelte": "^0.2.8"
 	}
 }

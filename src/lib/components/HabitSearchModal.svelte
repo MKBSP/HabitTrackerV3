@@ -4,131 +4,237 @@
     import { Button } from "$lib/components/ui/button";
     import { page } from '$app/stores';
     import { createEventDispatcher } from 'svelte';
+    import { writable, derived } from 'svelte/store';
+    import { supabase } from '$lib/supabase';
+
+    export let open = false;
 
     const dispatch = createEventDispatcher();
 
-    let { open = false } = $props<{ open: boolean }>();
-    let habits = $state<any[]>([]);
-    let loading = $state(false);
-    let searchTerm = $state('');
+    type Habit = {
+        id: number;
+        name: string;
+        description: string;
+        is_generic?: boolean;
+    };
 
-    async function fetchWithRetry(fn: () => Promise<any>, retries = 3) {
-        for (let i = 0; i < retries; i++) {
-            try {
-                return await fn();
-            } catch (error) {
-                console.error(`Attempt ${i + 1} failed:`, error);
-                if (i === retries - 1) throw error;
-                await new Promise(resolve => setTimeout(resolve, 1000 * (i + 1)));
-            }
+ // Local stores
+    const habits = writable<Habit[]>([]);
+    const loading = writable(false);
+    const searchTerm = writable('');
+    const showCreateForm = writable(false);
+    const newHabitName = writable('');
+    const newHabitDescription = writable('');
+    const error = writable<string | null>(null);
+
+    const filteredHabits = derived(
+        [habits, searchTerm],
+        ([$habits, $searchTerm]) => $searchTerm
+            ? $habits.filter(habit => 
+                habit.name.toLowerCase().includes($searchTerm.toLowerCase()) ||
+                (habit.description && habit.description.toLowerCase().includes($searchTerm.toLowerCase()))
+            )
+            : $habits
+    );
+
+    let currentUser: any = null;
+
+    // Add initialization check
+    async function initializeAuth() {
+        const { data: { user }, error } = await supabase.auth.getUser();
+        if (error) {
+            console.error('Auth error:', error);
+            return;
         }
+        currentUser = user;
     }
 
     async function fetchHabits() {
-        const { supabase } = $page.data;
-        loading = true;
+        loading.set(true);
+        error.set(null);
         
         try {
-            console.log('[HabitSearchModal] Fetching habits...');
-            const { data, error } = await supabase
+            await initializeAuth(); // Ensure auth is initialized
+            
+            const { data, error: fetchError } = await supabase
                 .from('Habits')
                 .select('id, name, description')
                 .order('name');
 
-            if (error) {
-                console.error('[HabitSearchModal] Fetch error:', error);
-                throw error;
-            }
-            
-            habits = data || [];
-            console.log('[HabitSearchModal] Fetched habits:', habits);
-        } catch (error) {
-            console.error('[HabitSearchModal] Error:', error);
-            habits = [];
+            if (fetchError) throw fetchError;
+            habits.set(data || []);
+        } catch (err) {
+            console.error('[HabitSearchModal] Error:', err);
+            error.set('Failed to fetch habits');
+            habits.set([]);
         } finally {
-            loading = false;
+            loading.set(false);
         }
     }
 
     async function addHabit(habitId: number) {
-        const { supabase } = $page.data;
-        const userId = $page.data.session?.user.id;
-        
         try {
-            console.log('[HabitSearchModal] Adding habit:', { habitId, userId });
-            
-            const { data, error } = await supabase
+            if (!currentUser) {
+                await initializeAuth();
+                if (!currentUser) throw new Error('No authenticated user');
+            }
+
+            const { error: insertError } = await supabase
                 .from('User_Habits')
                 .insert({
-                    user_id: userId,
+                    user_id: currentUser.id,
                     habit_id: habitId
+                });
+
+            if (insertError) throw insertError;
+
+            dispatch('habitAdded');
+            dispatch('close');
+        } catch (err) {
+            console.error('[HabitSearchModal] Error adding habit:', err);
+            error.set('Failed to add habit');
+        }
+    }
+
+    async function createAndAddHabit() {
+        if (!$newHabitName.trim()) {
+            error.set('Habit name is required');
+            return;
+        }
+
+        try {
+            const { data: habitData, error: habitError } = await supabase
+                .from('Habits')
+                .insert({
+                    name: $newHabitName,
+                    description: $newHabitDescription,
+                    is_generic: false
                 })
                 .select()
                 .single();
 
-            if (error) {
-                console.error('[HabitSearchModal] Add habit error:', error);
-                throw error;
-            }
+            if (habitError) throw habitError;
+            if (habitData) await addHabit(habitData.id);
 
-            console.log('[HabitSearchModal] Habit added successfully:', data);
-            dispatch('habitAdded');
-            dispatch('close');
-        } catch (error) {
-            console.error('[HabitSearchModal] Add habit full error:', { error, habitId, userId });
+            newHabitName.set('');
+            newHabitDescription.set('');
+            showCreateForm.set(false);
+        } catch (err) {
+            console.error('[HabitSearchModal] Error creating habit:', err);
+            error.set('Failed to create habit');
         }
     }
 
-    // Update effects for Svelte 5
-    $effect(() => {
-        console.log('[HabitSearchModal] Open state changed:', open);
-        if (open) {
-            fetchHabits();
-        }
-    });
+    function handleFormSubmit(e: Event) {
+        e.preventDefault();
+        createAndAddHabit();
+    }
 
-    $effect(() => {
-        if (searchTerm) {
-            console.log('[HabitSearchModal] Search term:', searchTerm);
-        }
-    });
+    // Update the initialization trigger
+    $: if (open) {
+        fetchHabits();
+        initializeAuth();
+    }
 </script>
 
 <Dialog 
-    open={open} 
-    onOpenChange={(isOpen: boolean) => dispatch('close')}
+    {open}
+    on:openChange={() => dispatch('close')}
 >
-    <DialogContent class="sm:max-w-[425px]">
+    <DialogContent class="sm:max-w-[850px]">
         <DialogHeader>
             <DialogTitle>Add Habits</DialogTitle>
         </DialogHeader>
-        <div class="space-y-4">
-            <Input 
-                placeholder="Search habits..." 
-                bind:value={searchTerm}
-            />
-            <div class="max-h-[300px] overflow-y-auto space-y-2">
-                {#if loading}
-                    <p class="text-center">Loading...</p>
-                {:else if habits.length === 0}
-                    <p class="text-center">No habits found</p>
-                {:else}
-                    {#each habits as habit}
-                        <div class="flex items-center justify-between p-2 border rounded">
-                            <div>
-                                <h4 class="font-medium">{habit.name}</h4>
-                                <p class="text-sm text-muted-foreground">{habit.description}</p>
+        <div class="flex gap-4">
+            <!-- Search and Results -->
+            <div class="w-1/2 space-y-4">
+                <Input 
+                    placeholder="Search habits..." 
+                    bind:value={$searchTerm}
+                />
+                {#if $error}
+                    <div class="text-red-500 text-sm">{$error}</div>
+                {/if}
+                <div class="max-h-[400px] overflow-y-auto space-y-2">
+                    {#if $loading}
+                        <p class="text-center">Loading...</p>
+                    {:else if $filteredHabits.length === 0}
+                        <div class="text-center">
+                            <p>No habits found</p>
+                        </div>
+                    {:else}
+                        {#each $filteredHabits as habit}
+                            <div class="flex items-center justify-between p-2 border rounded">
+                                <div>
+                                    <h4 class="font-medium">{habit.name}</h4>
+                                    <p class="text-sm text-muted-foreground">{habit.description}</p>
+                                </div>
+                                <Button 
+                                    variant="outline"
+                                    size="sm"
+                                    on:click={() => addHabit(habit.id)}
+                                >
+                                    Add
+                                </Button>
                             </div>
+                        {/each}
+                    {/if}
+                </div>
+            </div>
+
+            <!-- Create Form -->
+            {#if $showCreateForm}
+                <div class="w-1/2 border-l pl-4">
+                    <form 
+                        class="space-y-4" 
+                        on:submit={handleFormSubmit}
+                    >
+                        <div class="space-y-2">
+                            <label for="habitName" class="text-sm font-medium">Habit Name*</label>
+                            <Input 
+                                id="habitName"
+                                bind:value={$newHabitName}
+                                required
+                                placeholder="Enter habit name"
+                            />
+                        </div>
+                        <div class="space-y-2">
+                            <label for="habitDesc" class="text-sm font-medium">Description</label>
+                            <Input 
+                                id="habitDesc"
+                                bind:value={$newHabitDescription}
+                                placeholder="Enter habit description"
+                            />
+                        </div>
+                        <div class="flex justify-end gap-2">
                             <Button 
-                                size="sm"
-                                on:click={() => addHabit(habit.id)}
+                                type="button" 
+                                variant="outline"
+                                on:click={() => showCreateForm.set(false)}
                             >
-                                Add
+                                Cancel
+                            </Button>
+                            <Button 
+                                type="submit"
+                                disabled={!$newHabitName}
+                            >
+                                Save and Add
                             </Button>
                         </div>
-                    {/each}
-                {/if}
-            </div>
+                    </form>
+                </div>
+            {/if}
+        </div>
+
+        <!-- Create New Habit Button -->
+        <div class="pt-4 mt-4 border-t">
+            <Button 
+                variant="outline" 
+                class="w-full"
+                on:click={() => showCreateForm.set(true)}
+            >
+                Create New Habit
+            </Button>
         </div>
     </DialogContent>
 </Dialog>

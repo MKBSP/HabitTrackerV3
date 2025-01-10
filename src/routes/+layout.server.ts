@@ -1,18 +1,14 @@
 import { redirect } from '@sveltejs/kit';
+import type { LayoutServerLoad } from './$types';
 
-const PUBLIC_ROUTES = new Set(['/auth/login', '/auth/signup', '/']);
+export const load: LayoutServerLoad = async ({ locals, url }) => {
+    const session = await locals.getSession();
+    const isProtectedRoute = url.pathname.startsWith('/dashboard') || 
+                            url.pathname.startsWith('/goals');
 
-export const load = async ({ url, locals: { safeGetSession } }) => {
-    const { session, user } = await safeGetSession();
-    const isPublicRoute = PUBLIC_ROUTES.has(url.pathname);
-
-    if (!session && !isPublicRoute) {
+    if (isProtectedRoute && !session) {
         throw redirect(303, '/auth/login');
     }
 
-    if (session && (url.pathname === '/auth/login' || url.pathname === '/auth/signup')) {
-        throw redirect(303, '/dashboard');
-    }
-
-    return { session, user };
+    return { session };
 };

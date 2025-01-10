@@ -1,46 +1,55 @@
-import { getOrCreateUserProfile } from "$lib/auth";
 import { error, fail, redirect } from "@sveltejs/kit";
-import { eq } from "drizzle-orm";
-import { zfd } from "zod-form-data";
-import type { Actions } from './$types';
+import type { PageServerLoad, Actions } from './$types';
 
-export const load = async ({ locals }) => {
-  const userProfile = await getOrCreateUserProfile(locals);
+export const load: PageServerLoad = async ({ locals: { supabase } }) => {
+    const { data: { session } } = await supabase.auth.getSession();
+    
+    if (!session?.user) {
+        return { user: null };
+    }
 
-  return {
-    userProfile,
-  };
+    const { data: profile, error: profileError } = await supabase
+        .from('Profiles')
+        .select('*')
+        .eq('id', session.user.id)
+        .single();
+
+    if (profileError && profileError.code !== 'PGRST116') {
+        throw error(500, "Error fetching profile");
+    }
+
+    return { user: session.user, profile };
 };
 
 export const actions: Actions = {
-  default: async ({ request, locals: { supabase } }) => {
-    const formData = await request.formData();
-    const email = formData.get('email') as string;
-    const password = formData.get('password') as string;
-    const isSignUp = formData.get('isSignUp') === 'true';
+    default: async ({ request, locals: { supabase } }) => {
+        const formData = await request.formData();
+        const email = formData.get('email') as string;
+        const password = formData.get('password') as string;
+        const isSignUp = formData.get('isSignUp') === 'true';
 
-    if (isSignUp) {
-      const { error } = await supabase.auth.signUp({
-        email,
-        password,
-      });
+        if (isSignUp) {
+            const { error } = await supabase.auth.signUp({
+                email,
+                password,
+            });
 
-      if (error) {
-        return fail(400, { error: error.message });
-      }
+            if (error) {
+                return fail(400, { error: error.message });
+            }
 
-      return { success: true };
-    } else {
-      const { error } = await supabase.auth.signInWithPassword({
-        email,
-        password,
-      });
+            return { success: true };
+        } else {
+            const { error } = await supabase.auth.signInWithPassword({
+                email,
+                password,
+            });
 
-      if (error) {
-        return fail(400, { error: error.message });
-      }
+            if (error) {
+                return fail(400, { error: error.message });
+            }
 
-      throw redirect(303, '/dashboard');
+            throw redirect(303, '/dashboard');
+        }
     }
-  }
 };
