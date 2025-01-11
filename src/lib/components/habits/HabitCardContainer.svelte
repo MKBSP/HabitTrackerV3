@@ -7,6 +7,7 @@
     import { Plus, ChevronLeft, ChevronRight, Trash2 } from "lucide-svelte"; // Add delete icon
     import { writable } from 'svelte/store';
     import { habitStore } from '$lib/stores/habits';
+    import { fade } from 'svelte/transition';
 
     const showAddModal = writable(false);
     const dispatch = createEventDispatcher();
@@ -68,8 +69,7 @@
     function changeDate(days: number) {
         const date = new Date($habitStore.currentDate);
         date.setDate(date.getDate() + days);
-        console.log('Changing date to:', date.toISOString());
-        habitStore.setCurrentDate(date.toISOString());
+        habitStore.setCurrentDate(date.toISOString(), false); // Add noRefresh param
     }
 
     function formatDate(date: string | null): string {
@@ -128,17 +128,21 @@
                 </div>
             </Card.Header>
             <Card.Content class="space-y-4 max-h-[600px] overflow-y-auto">
-                {#each habits as habit (habit.id)}
-                    <HabitCards
-                        id={habit.id}
-                        title={habit.title}
-                        description={habit.description}
-                        isCompleted={habit.isCompleted}
-                        goal={habit.goal}
-                        on:complete={({ detail }) => handleHabitComplete(habit.id, detail.completed)}
-                        on:delete={() => handleDeleteHabit(habit.id)}
-                    />
-                {/each}
+                {#key $habitStore.currentDate}
+                    <div transition:fade={{ duration: 150 }}>
+                        {#each habits as habit (habit.id)}
+                            <HabitCards
+                                id={habit.id}
+                                title={habit.title}
+                                description={habit.description}
+                                isCompleted={habit.isCompleted}
+                                goal={habit.goal}
+                                on:complete={({ detail }) => handleHabitComplete(habit.id, detail.completed)}
+                                on:delete={() => handleDeleteHabit(habit.id)}
+                            />
+                        {/each}
+                    </div>
+                {/key}
             </Card.Content>
         </Card.Root>
     </div>

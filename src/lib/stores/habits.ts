@@ -1,7 +1,7 @@
 import { writable, derived } from 'svelte/store';
 import { browser } from '$app/environment';
 import { supabase } from '$lib/supabase';
-import { fetchHabitsWithStatus } from '$lib/data/habitService';
+import { fetchHabitsWithStatus, saveHabitCompletion, type TransformedHabit } from '$lib/data/habitService';
 
 type HabitState = {
     habits: TransformedHabit[];
@@ -21,13 +21,14 @@ function createHabitStore() {
     };
 
     const { subscribe, set, update } = writable<HabitState>(initialState);
-
-    return {
+    
+    const store = {
         subscribe,
         habits: derived({ subscribe }, $state => $state.habits),
         currentDate: derived({ subscribe }, $state => $state.currentDate),
         initialized: derived({ subscribe }, $state => $state.initialized),
         loading: derived({ subscribe }, $state => $state.loading),
+        error: derived({ subscribe }, $state => $state.error),
 
         async initialize() {
             if (!browser) return false;
@@ -35,8 +36,9 @@ function createHabitStore() {
             try {
                 update(s => ({ ...s, loading: true, error: null }));
 
-                const { data: { user } } = await supabase.auth.getUser();
-                if (!user) throw new Error('No authenticated user');
+                // Use getUser instead of getSession
+                const { data: { user }, error: userError } = await supabase.auth.getUser();
+                if (userError || !user) throw new Error('No authenticated user');
 
                 const { data: profile } = await supabase
                     .from('Profiles')
@@ -71,11 +73,15 @@ function createHabitStore() {
             }
         },
 
-        async setCurrentDate(date: string) {
+        async setCurrentDate(date: string, showLoading = true) {
             try {
-                update(s => ({ ...s, loading: true }));
+                if (showLoading) {
+                    update(s => ({ ...s, loading: true }));
+                }
+                
                 const { data: { user } } = await supabase.auth.getUser();
                 const habits = await fetchHabitsWithStatus(user.id, date);
+                
                 update(s => ({ 
                     ...s, 
                     currentDate: date,
@@ -86,10 +92,43 @@ function createHabitStore() {
                 console.error('[HabitStore] Error:', e);
                 update(s => ({ ...s, error: e.message, loading: false }));
             }
-        }
+        },
 
-        // ... other methods (toggleComplete, deleteHabit) remain similar
+        async toggleComplete(habitId: number, completed: boolean) {
+            try {
+                let currentState: string;
+                
+                // Optimistically update UI immediately
+                update(s => {
+                    currentState = s.currentDate;
+                    return {
+                        ...s,
+                        habits: s.habits.map(h => 
+                            h.id === habitId ? { ...h, isCompleted: completed } : h
+                        )
+                    };
+                });
+
+                const { data: { user } } = await supabase.auth.getUser();
+                if (!user) throw new Error('No authenticated user');
+
+                await saveHabitCompletion(habitId, completed, currentState);
+                
+            } catch (e) {
+                console.error('[HabitStore] Error:', e);
+                // Revert the optimistic update on error
+                update(s => ({
+                    ...s,
+                    error: e.message,
+                    habits: s.habits.map(h => 
+                        h.id === habitId ? { ...h, isCompleted: !completed } : h
+                    )
+                }));
+            }
+        }
     };
+
+    return store;
 }
 
 export const habitStore = createHabitStore();

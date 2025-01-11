@@ -33,53 +33,63 @@
         isCollapsed ? "scale-95 opacity-75 py-2" : "scale-100 opacity-100 py-4"
     );
 
+    // Sync checked state with isCompleted prop
+    $: checked = isCompleted;
+    $: isCollapsed = isCompleted;
+
     async function handleCheckboxChange(newState: boolean) {
-        try {
-            checked = newState;
-            isCollapsed = newState;
-            await dispatch('complete', { habitId: id, completed: newState });
-        } catch (error) {
-            console.error("[HabitCard] Error:", error);
-            checked = !newState;
-            isCollapsed = !newState;
-        }
+        checked = newState;
+        isCollapsed = newState;
+        await dispatch('complete', { habitId: id, completed: newState });
     }
 </script>
 
-<Card class={cardClasses}>
-    <CardHeader class={cn(
-        "flex flex-row items-center space-y-0 justify-between",
-        isCollapsed ? "pb-1 pt-1" : "pb-2 pt-2"
-    )}>
-        <div class="flex items-center gap-4 flex-1">
-            <Checkbox 
-                checked={checked}
-                onCheckedChange={handleCheckboxChange}
-            />
-            <div class="flex-1">
-                <h3 class={cn(
-                    "font-semibold leading-none tracking-tight",
-                    isCollapsed ? "text-sm text-muted-foreground" : "text-base"
-                )}>{title}</h3>
-                {#if !isCollapsed}
-                    <p class="text-sm text-muted-foreground mt-1" transition:slide>
-                        {description}
-                    </p>
-                    {#if goal}
-                        <div class="mt-2 text-sm text-muted-foreground">
-                            Goal: {goal.target} times per {goal.frequency}
-                        </div>
+<div 
+    class="wrapper"
+    transition:slide|local={{ duration: 300 }}
+>
+    <Card class={cardClasses}>
+        <CardHeader class={cn(
+            "flex flex-row items-center space-y-0 justify-between",
+            isCollapsed ? "pb-1 pt-1" : "pb-2 pt-2"
+        )}>
+            <div class="flex items-center gap-4 flex-1">
+                <Checkbox 
+                    checked={checked}
+                    onCheckedChange={handleCheckboxChange}
+                />
+                <div class="flex-1">
+                    <h3 class={cn(
+                        "font-semibold leading-none tracking-tight",
+                        isCollapsed ? "text-sm text-muted-foreground" : "text-base"
+                    )}>{title}</h3>
+                    {#if !isCollapsed}
+                        <p class="text-sm text-muted-foreground mt-1" transition:slide>
+                            {description}
+                        </p>
+                        {#if goal}
+                            <div class="mt-2 text-sm text-muted-foreground">
+                                Goal: {goal.target} times per {goal.frequency}
+                            </div>
+                        {/if}
                     {/if}
-                {/if}
+                </div>
             </div>
-        </div>
-        <Button 
-            variant="ghost" 
-            size="icon"
-            class="text-destructive hover:text-destructive/90"
-            on:click={() => dispatch('delete')}
-        >
-            <Trash2 class="h-4 w-4" />
-        </Button>
-    </CardHeader>
-</Card>
+            <Button 
+                variant="ghost" 
+                size="icon"
+                class="text-destructive hover:text-destructive/90"
+                on:click={() => dispatch('delete')}
+            >
+                <Trash2 class="h-4 w-4" />
+            </Button>
+        </CardHeader>
+    </Card>
+</div>
+
+<style>
+    .wrapper {
+        position: relative;
+        width: 100%;
+    }
+</style>

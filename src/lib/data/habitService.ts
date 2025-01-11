@@ -1,19 +1,20 @@
 import { browser } from '$app/environment';
 import { supabase } from '$lib/supabase';
 
-type DateRange = {
-    start: string;
-    end: string;
-};
-
-type TransformedHabit = {
+// Add type exports at the top
+export type TransformedHabit = {
     id: number;
     title: string;
     description: string;
     isCompleted: boolean;
     created_at: string;
     deleted_at: string | null;
-    goal: null; // Add goal support later
+    goal: null;
+};
+
+type DateRange = {
+    start: string;
+    end: string;
 };
 
 // Cache implementation with browser check
@@ -94,11 +95,10 @@ export async function fetchCompletions(habitIds: number[], dateRange: { start: s
     console.log('=== Fetching Completions ===', { habitIds, dateRange });
     const { data, error } = await supabase
         .from('Habit_Completion')
-        .select('id, user_habit_id, completed_at, completed')  // Add completed field
+        .select('*')
         .in('user_habit_id', habitIds)
-        .gte('completed_at', dateRange.start)
-        .lte('completed_at', dateRange.end)
-        .order('completed_at', { ascending: false });
+        .gte('completed_at', dateRange.start.split('T')[0])
+        .lte('completed_at', dateRange.end.split('T')[0]);
 
     console.log('=== Completions Response ===', { data, error });
     if (error) throw error;
@@ -164,6 +164,46 @@ export async function fetchHabitsWithStatus(userId: string, date: string) {
         return transformedHabits;
     } catch (error) {
         console.error('Error fetching habits with status:', error);
+        throw error;
+    }
+}
+
+// Make sure this is exported
+export async function saveHabitCompletion(habitId: number, completed: boolean, date: string) {
+    console.log('=== Saving Habit Completion ===', { habitId, completed, date });
+    
+    try {
+        const dateOnly = date.split('T')[0];
+        const { data: existing } = await supabase
+            .from('Habit_Completion')
+            .select('id')
+            .eq('user_habit_id', habitId)
+            .eq('completed_at', dateOnly)
+            .maybeSingle();
+
+        if (existing) {
+            await supabase
+                .from('Habit_Completion')
+                .update({ completed })
+                .eq('id', existing.id);
+        } else {
+            await supabase
+                .from('Habit_Completion')
+                .insert({
+                    user_habit_id: habitId,
+                    completed_at: dateOnly,
+                    completed
+                });
+        }
+
+        // Only clear specific habit cache
+        if (browser) {
+            cache.clear(`habits-${habitId}`);
+        }
+
+        return true;
+    } catch (error) {
+        console.error('Error saving habit completion:', error);
         throw error;
     }
 }
