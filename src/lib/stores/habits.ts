@@ -80,7 +80,17 @@ function createHabitStore() {
                 }
                 
                 const { data: { user } } = await supabase.auth.getUser();
-                const habits = await fetchHabitsWithStatus(user.id, date);
+                if (!user) throw new Error('No authenticated user');
+
+                const { data: profile } = await supabase
+                    .from('Profiles')
+                    .select('id')
+                    .eq('user_auth_id', user.id)
+                    .single();
+                
+                if (!profile) throw new Error('No profile found');
+
+                const habits = await fetchHabitsWithStatus(profile.id, date);
                 
                 update(s => ({ 
                     ...s, 
@@ -98,21 +108,35 @@ function createHabitStore() {
             try {
                 let currentState: string;
                 
-                // Optimistically update UI immediately
+                // Update store immediately
                 update(s => {
                     currentState = s.currentDate;
                     return {
                         ...s,
                         habits: s.habits.map(h => 
-                            h.id === habitId ? { ...h, isCompleted: completed } : h
+                            h.id === habitId ? { 
+                                ...h, 
+                                isCompleted: completed,
+                                completions: completed ? 
+                                    [...(h.completions || []), { 
+                                        completed_at: currentState, 
+                                        completed: true,
+                                        user_habit_id: habitId 
+                                    }] :
+                                    h.completions?.filter(c => 
+                                        new Date(c.completed_at).toISOString().split('T')[0] !== 
+                                        new Date(currentState).toISOString().split('T')[0]
+                                    ) || []
+                            } : h
                         )
                     };
                 });
 
-                const { data: { user } } = await supabase.auth.getUser();
-                if (!user) throw new Error('No authenticated user');
-
+                // Save to database
                 await saveHabitCompletion(habitId, completed, currentState);
+                
+                // Force a store update to trigger subscribers
+                update(s => ({ ...s }));
                 
             } catch (e) {
                 console.error('[HabitStore] Error:', e);

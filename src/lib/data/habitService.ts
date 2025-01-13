@@ -92,17 +92,36 @@ export async function fetchUserHabits(userId: string) {
 }
 
 export async function fetchCompletions(habitIds: number[], dateRange: { start: string, end: string }) {
-    console.log('=== Fetching Completions ===', { habitIds, dateRange });
+    console.log('=== Fetching Completions ===', { 
+        habitIds, 
+        dateRange,
+        startDate: new Date(dateRange.start),
+        endDate: new Date(dateRange.end)
+    });
+
     const { data, error } = await supabase
         .from('Habit_Completion')
         .select('*')
         .in('user_habit_id', habitIds)
         .gte('completed_at', dateRange.start.split('T')[0])
-        .lte('completed_at', dateRange.end.split('T')[0]);
+        .lte('completed_at', dateRange.end.split('T')[0])
+        .eq('completed', true) // Only get completed ones
+        .order('completed_at', { ascending: true }); // Order by date
 
-    console.log('=== Completions Response ===', { data, error });
+    console.log('=== Raw Completions Data ===', data);
+    
     if (error) throw error;
-    return data || [];
+    
+    const processedData = data || [];
+    console.log('=== Processed Completions ===', {
+        count: processedData.length,
+        byHabit: processedData.reduce((acc, curr) => {
+            acc[curr.user_habit_id] = (acc[curr.user_habit_id] || 0) + 1;
+            return acc;
+        }, {})
+    });
+    
+    return processedData;
 }
 
 type HabitWithStatus = {
@@ -121,22 +140,26 @@ export async function fetchHabitsWithStatus(userId: string, date: string) {
     console.log('=== Fetching Habits with Status ===', { userId, date });
     
     try {
-        // Try cache first
-        const cached = cache.get('habits-' + userId);
-        if (cached?.date === date) {
-            console.log('=== Using Cached Data ===');
-            return cached.habits;
-        }
-
         const habits = await fetchUserHabits(userId);
         const habitIds = habits.map(h => h.id);
 
+        // Modify date range to get 14 days of data
+        const endDate = new Date(date);
+        const startDate = new Date(endDate);
+        startDate.setDate(startDate.getDate() - 13);
+
         const [completions] = await Promise.all([
             fetchCompletions(habitIds, {
-                start: date,
-                end: date
+                start: startDate.toISOString(),
+                end: endDate.toISOString()
             })
         ]);
+
+        console.log('=== Processing Habits with Completions ===', {
+            habitsCount: habits.length,
+            completionsCount: completions.length,
+            dateRange: `${startDate.toISOString()} to ${endDate.toISOString()}`
+        });
 
         const transformedHabits = habits.map(habit => ({
             id: habit.id,
@@ -149,17 +172,28 @@ export async function fetchHabitsWithStatus(userId: string, date: string) {
                 new Date(c.completed_at).toISOString().split('T')[0] === date.split('T')[0] &&
                 c.completed
             ),
+            // Add completions array to each habit
+            completions: completions
+                .filter(c => c.user_habit_id === habit.id)
+                .sort((a, b) => new Date(b.completed_at).getTime() - new Date(a.completed_at).getTime())
+                .reduce((acc, curr) => {
+                    // Only take the latest completion status for each date
+                    const dateStr = new Date(curr.completed_at).toISOString().split('T')[0];
+                    if (!acc.find(c => new Date(c.completed_at).toISOString().split('T')[0] === dateStr)) {
+                        acc.push(curr);
+                    }
+                    return acc;
+                }, []),
             goal: null
         }));
 
-        // Cache the result
-        if (browser) {
-            cache.set('habits-' + userId, {
-                date,
-                habits: transformedHabits,
-                timestamp: new Date().toISOString()
-            });
-        }
+        console.log('=== Transformed Habits with Completions ===', 
+            transformedHabits.map(h => ({
+                title: h.title,
+                completionsCount: h.completions.length,
+                completions: h.completions
+            }))
+        );
 
         return transformedHabits;
     } catch (error) {

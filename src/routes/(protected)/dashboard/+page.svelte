@@ -4,6 +4,7 @@
     import { onMount } from 'svelte';
     import { habitStore } from '$lib/stores/habits';
     import { session } from '$lib/stores/auth';
+    import DailyHabitCompletionGraph from '$lib/components/graphs/DailyHabitCompletionGraph.svelte';
 
     let initError: string | null = null;
 
@@ -35,4 +36,6 @@
             <HabitCardContainer />
         </Card.Content>
     </Card.Root>
+    <DailyHabitCompletionGraph />
+
 </div>
