@@ -33,7 +33,7 @@
         
         {#if $session}
             <Button variant="ghost" href="/dashboard">Dashboard</Button>
-            <Button variant="ghost" href="/goals">Goals</Button>
+            <Button variant="ghost" href="/profile">Profile</Button>
         {/if}
     </div>
 
