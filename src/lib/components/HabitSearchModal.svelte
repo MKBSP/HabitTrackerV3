@@ -79,14 +79,42 @@
                 if (!currentUser) throw new Error('No authenticated user');
             }
 
-            const { error: insertError } = await supabase
+            // Check for any existing habit (active or not)
+            const { data: existing } = await supabase
                 .from('User_Habits')
-                .insert({
-                    user_id: currentUser.id,
-                    habit_id: habitId
-                });
+                .select('id, is_active, deleted_at')
+                .eq('user_id', currentUser.id)
+                .eq('habit_id', habitId);
 
-            if (insertError) throw insertError;
+            if (existing && existing.length > 0) {
+                const activeHabit = existing.find(h => h.is_active || !h.deleted_at);
+                if (activeHabit) {
+                    error.set('This habit is already in your list');
+                    return;
+                }
+
+                // If habit exists but is deleted, reactivate it
+                const { error: updateError } = await supabase
+                    .from('User_Habits')
+                    .update({ 
+                        is_active: true, 
+                        deleted_at: null 
+                    })
+                    .eq('id', existing[0].id);
+
+                if (updateError) throw updateError;
+            } else {
+                // Create new habit if it doesn't exist at all
+                const { error: insertError } = await supabase
+                    .from('User_Habits')
+                    .insert({
+                        user_id: currentUser.id,
+                        habit_id: habitId,
+                        is_active: true
+                    });
+
+                if (insertError) throw insertError;
+            }
 
             dispatch('habitAdded');
             dispatch('close');

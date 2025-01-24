@@ -53,7 +53,10 @@
 
     async function handleDeleteHabit(habitId: number) {
         if (confirm('Are you sure you want to delete this habit?')) {
-            await habitStore.deleteHabit(habitId);
+            const success = await habitStore.deleteHabit(habitId);
+            if (!success) {
+                console.error('Failed to delete habit');
+            }
         }
     }
 

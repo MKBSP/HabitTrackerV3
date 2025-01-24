@@ -8,9 +8,15 @@
     let showCreateDialog = false;
     let editingGoal: Goal | null = null;
 
+    async function updateGoalPerformances() {
+        // This will force recalculation of goal performances
+        await goalStore.triggerRecalculation();
+    }
+
     onMount(async () => {
         console.log('Initializing goals store...');
         await goalStore.initialize();
+        await updateGoalPerformances();
     });
 
     async function handleCreateGoal(event: CustomEvent) {
@@ -104,9 +110,21 @@
                                                 {kpi.target} time{kpi.target !== 1 ? 's' : ''} per {kpi.period}
                                             </div>
                                             <div class="flex items-center gap-2">
-                                                <div class="w-24 text-right">
-                                                    <span class="text-sm font-medium">0%</span>
-                                                </div>
+                                                {#await goalStore.getGoalPerformance(goal.id)}
+                                                    <div class="w-24 text-right">
+                                                        <span class="text-sm">Calculating...</span>
+                                                    </div>
+                                                {:then performance}
+                                                    <div class="w-24 text-right">
+                                                        <span class="text-sm font-medium">
+                                                            {performance?.kpis[i] ? `${Math.round(performance.kpis[i].performance)}%` : '0%'}
+                                                        </span>
+                                                    </div>
+                                                {:catch}
+                                                    <div class="w-24 text-right">
+                                                        <span class="text-sm text-destructive">Error</span>
+                                                    </div>
+                                                {/await}
                                                 <Button 
                                                     variant="ghost"
                                                     size="sm"
@@ -126,13 +144,25 @@
 
                         <!-- Stats/Calculations Column -->
                         <div class="w-48 ml-6 pl-6 border-l">
-                            <div class="space-y-2">
-                                <div class="text-sm font-medium text-muted-foreground">Overall Progress</div>
-                                <div class="text-2xl font-semibold">0%</div>
-                                <div class="text-sm text-muted-foreground">
-                                    This Week: 0/{goal.kpis?.length || 0}
+                            {#await goalStore.getGoalPerformance(goal.id)}
+                                <div class="space-y-2">
+                                    <div class="text-sm font-medium text-muted-foreground">Calculating...</div>
                                 </div>
-                            </div>
+                            {:then performance}
+                                <div class="space-y-2">
+                                    <div class="text-sm font-medium text-muted-foreground">Overall Progress</div>
+                                    <div class="text-2xl font-semibold">
+                                        {performance ? `${Math.round(performance.overallProgress)}%` : '0%'}
+                                    </div>
+                                    <div class="text-sm text-muted-foreground">
+                                        This Week: {performance?.kpis.filter(k => k.performance >= 100).length || 0}/{goal.kpis?.length || 0}
+                                    </div>
+                                </div>
+                            {:catch}
+                                <div class="space-y-2">
+                                    <div class="text-sm font-medium text-destructive">Error calculating progress</div>
+                                </div>
+                            {/await}
                         </div>
                     </div>
                 </Card.Root>
