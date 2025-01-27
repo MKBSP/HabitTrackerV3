@@ -50,6 +50,7 @@
 		"d3-axis": "^3.0.0",
 		"d3-scale": "^4.0.2",
 		"d3-selection": "^3.0.0",
+		"dotenv": "^16.4.7",
 		"drizzle-orm": "^0.30.10",
 		"layercake": "^8.4.2",
 		"lucide-svelte": "^0.399.0",

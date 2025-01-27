@@ -44,6 +44,9 @@ importers:
       d3-selection:
         specifier: ^3.0.0
         version: 3.0.0
+      dotenv:
+        specifier: ^16.4.7
+        version: 16.4.7
       drizzle-orm:
         specifier: ^0.30.10
         version: 0.30.10(postgres@3.4.5)
@@ -1442,6 +1445,10 @@ packages:
 
   dompurify@3.2.3:
     resolution: {integrity: sha512-U1U5Hzc2MO0oW3DF+G9qYN0aT7atAou4AgI0XjWz061nyBPbdxkfdhfy5uMgGn6+oLFCfn44ZGbdDqCzVmlOWA==}
+
+  dotenv@16.4.7:
+    resolution: {integrity: sha512-47qPchRCykZC03FhkYAhrvwU4xDBFIj1QPqaarj6mdM/hgUzfPHcpkHJOn3mJAufFeeAxAzeGsr5X0M4k6fLZQ==}
+    engines: {node: '>=12'}
 
   dreamopt@0.8.0:
     resolution: {integrity: sha512-vyJTp8+mC+G+5dfgsY+r3ckxlz+QMX40VjPQsZc5gxVAxLmi64TBoVkP54A/pRAXMXsbu2GMMBrZPxNv23waMg==}
@@ -3880,6 +3887,8 @@ snapshots:
   dompurify@3.2.3:
     optionalDependencies:
       '@types/trusted-types': 2.0.7
+
+  dotenv@16.4.7: {}
 
   dreamopt@0.8.0:
     dependencies:
