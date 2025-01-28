@@ -5,7 +5,7 @@
     import { habitStore } from '$lib/stores/habits';
     import { session } from '$lib/stores/auth';
     import DailyHabitCompletionGraph from '$lib/components/graphs/DailyHabitCompletionGraph.svelte';
-    
+
     let initError: string | null = null;
     let initialized = false;
 
@@ -20,7 +20,7 @@
             
             initialized = true;
             console.log('=== Initialization Complete ===', {
-                habits: $habitStore.habits
+                habits: habitStore.habits // Corrected variable reference
             });
         } catch (error) {
             console.error('Initialization error:', error);

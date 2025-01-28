@@ -73,7 +73,6 @@
         // Generate all dates between first and actual current date
         const allDates = [];
         const firstDate = sortedDates[0];
-
         for (let d = new Date(firstDate); d <= actualCurrentDate; d.setDate(d.getDate() + 1)) {
             allDates.push(new Date(d));
         }
