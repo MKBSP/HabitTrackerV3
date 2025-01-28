@@ -43,7 +43,7 @@
 
     // Enhanced completion tracking
     function getCompletionsForDate(habit: any, dateStr: string) {
-        return habit.completions?.some((c: any) => 
+        return habit.completions?.some((c: { completed_at: string, completed: boolean }) => 
             formatDate(new Date(c.completed_at)) === dateStr && c.completed
         ) || false;
     }
@@ -51,8 +51,8 @@
     function getAllTimeRange() {
         const dates = new Set<string>();
         // Get all unique dates from completions
-        $habitStore.habits.forEach(habit => {
-            habit.completions?.forEach((c: any) => {
+        $habitStore.habits.forEach((habit: any) => {
+            habit.completions?.forEach((c: { completed_at: string }) => {
                 const completionDate = new Date(c.completed_at);
                 // Only include dates up to actual current date
                 if (completionDate <= actualCurrentDate) {
@@ -105,7 +105,7 @@
     }
 
     async function updateCompletionsData() {
-        const habitIds = $habitStore.habits.map(h => h.id);
+        const habitIds = $habitStore.habits.map((h: any) => h.id);
         const endDate = new Date();
         const startDate = new Date(endDate);
         startDate.setDate(startDate.getDate() - selectedRange.days);
@@ -123,9 +123,9 @@
         const dateStr = formatDate(date);
         console.log(`\n=== Processing date: ${dateStr} ===`);
         
-        const completions = $habitStore.habits.reduce((count, habit) => {
+        const completions = $habitStore.habits.reduce((count: number, habit: any) => {
             // Use completionsData instead of habit.completions
-            const completed = completionsData.some((c: any) => 
+            const completed = completionsData.some((c: { user_habit_id: number, completed_at: string }) => 
                 c.user_habit_id === habit.id && 
                 formatDate(new Date(c.completed_at)) === dateStr
             );
@@ -279,7 +279,7 @@
             .range([height, 0]);
 
         const lineGenerator = d3Line<any>()
-            .x(d => x(d.date))
+            .x(d => x(d.date).valueOf())
             .y(d => y(d.value))
             .curve(curveMonotoneX);
 
@@ -322,7 +322,7 @@
             .data(data)
             .enter()
             .append('circle')
-            .attr('cx', d => x(d.date))
+            .attr('cx', d => x(d.date).valueOf())
             .attr('cy', d => y(d.value))
             .attr('r', 4)
             .attr('fill', 'hsl(var(--primary))')
