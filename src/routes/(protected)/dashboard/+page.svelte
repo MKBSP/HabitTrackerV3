@@ -4,7 +4,7 @@
     import { onMount } from 'svelte';
     import { habitStore } from '$lib/stores/habits';
     import { session } from '$lib/stores/auth';
-    import DailyHabitCompletionGraph from '$lib/components/graphs/dailyHabitCompletionGraph.svelte'; // Corrected import path
+    import DailyHabitCompletionGraph from '$lib/components/graphs/DailyHabitCompletionGraph.svelte'; // Corrected import path
 
     let initError: string | null = null;
     let initialized = false;
