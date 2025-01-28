@@ -4,7 +4,7 @@ import { supabase } from '$lib/supabaseClient';
 export async function GET() {
     try {
         const { data, error } = await supabase
-            .from('Profiles')  // Changed from 'profiles' to 'Profiles'
+            .from('Profiles')
             .select('*')
             .limit(1);
 

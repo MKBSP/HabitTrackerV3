@@ -43,7 +43,7 @@
 
     // Enhanced completion tracking
     function getCompletionsForDate(habit: any, dateStr: string) {
-        return habit.completions?.some(c => 
+        return habit.completions?.some((c: any) => 
             formatDate(new Date(c.completed_at)) === dateStr && c.completed
         ) || false;
     }
@@ -52,7 +52,7 @@
         const dates = new Set<string>();
         // Get all unique dates from completions
         $habitStore.habits.forEach(habit => {
-            habit.completions?.forEach(c => {
+            habit.completions?.forEach((c: any) => {
                 const completionDate = new Date(c.completed_at);
                 // Only include dates up to actual current date
                 if (completionDate <= actualCurrentDate) {
@@ -125,7 +125,7 @@
         
         const completions = $habitStore.habits.reduce((count, habit) => {
             // Use completionsData instead of habit.completions
-            const completed = completionsData.some(c => 
+            const completed = completionsData.some((c: any) => 
                 c.user_habit_id === habit.id && 
                 formatDate(new Date(c.completed_at)) === dateStr
             );
@@ -298,14 +298,16 @@
         // Add weekly trend lines
         const weeklyTrends = calculateWeeklyTrendLines(data);
         weeklyTrends.forEach(week => {
-            svg.append('path')
-                .datum(week.points)
-                .attr('fill', 'none')
-                .attr('stroke', 'hsl(var(--primary))')
-                .attr('stroke-width', 2)
-                .attr('stroke-dasharray', '4,4')
-                .attr('stroke-opacity', 0.5)
-                .attr('d', lineGenerator);
+            if (week) {
+                svg.append('path')
+                    .datum(week.points)
+                    .attr('fill', 'none')
+                    .attr('stroke', 'hsl(var(--primary))')
+                    .attr('stroke-width', 2)
+                    .attr('stroke-dasharray', '4,4')
+                    .attr('stroke-opacity', 0.5)
+                    .attr('d', lineGenerator);
+            }
         });
 
         // Main line (keep existing)
@@ -332,7 +334,7 @@
             .attr('transform', `translate(0,${height})`)
             .call(axisBottom(x)
                 .ticks(7)
-                .tickFormat(d => d.toLocaleDateString('en-US', { month: 'short', day: 'numeric' })));
+                .tickFormat(d => (d instanceof Date ? d.toLocaleDateString('en-US', { month: 'short', day: 'numeric' }) : '')));
 
         // Y axis - only show whole numbers
         svg.append('g')

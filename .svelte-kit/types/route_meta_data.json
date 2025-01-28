@@ -1,0 +1,49 @@
+{
+	"/(protected)": [
+		"src/routes/(protected)/+layout.ts",
+		"src/routes/+layout.server.ts"
+	],
+	"/": [
+		"src/routes/+page.server.ts",
+		"src/routes/+layout.server.ts",
+		"src/routes/+layout.server.ts"
+	],
+	"/api/test": [
+		"src/routes/api/test/+server.ts"
+	],
+	"/auth/callback": [
+		"src/routes/auth/callback/+server.ts"
+	],
+	"/auth/login": [
+		"src/routes/auth/login/+page.server.ts",
+		"src/routes/+layout.server.ts"
+	],
+	"/auth/login/github": [
+		"src/routes/auth/login/github/+server.ts"
+	],
+	"/auth/logout": [
+		"src/routes/auth/logout/+server.ts"
+	],
+	"/(protected)/dashboard": [
+		"src/routes/(protected)/dashboard/+page.ts",
+		"src/routes/(protected)/+layout.ts",
+		"src/routes/+layout.server.ts"
+	],
+	"/(protected)/goals": [
+		"src/routes/(protected)/+layout.ts",
+		"src/routes/+layout.server.ts"
+	],
+	"/login": [
+		"src/routes/login/+page.server.ts",
+		"src/routes/+layout.server.ts"
+	],
+	"/(protected)/profile": [
+		"src/routes/(protected)/profile/+page.server.ts",
+		"src/routes/(protected)/+layout.ts",
+		"src/routes/+layout.server.ts"
+	],
+	"/(protected)/test": [
+		"src/routes/(protected)/+layout.ts",
+		"src/routes/+layout.server.ts"
+	]
+}
