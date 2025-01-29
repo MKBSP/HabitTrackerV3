@@ -7,11 +7,24 @@
       "config": {
         "nodeVersion": "18.x"
       }
+    },
+    {
+      "src": "src/**/*",
+      "use": "@vercel/static-build",
+      "config": {
+        "distDir": "build"
+      }
     }
   ],
   "build": {
     "env": {
       "NODE_VERSION": "18"
     }
-  }
+  },
+  "routes": [
+    {
+      "src": "/(.*)",
+      "dest": "/"
+    }
+  ]
 }
