@@ -10,6 +10,7 @@ const config = {
 	}),
 	kit: {
 		adapter: adapter({
+			out: 'build'
 		}),
 		alias: {
 			$lib: 'src/lib'
