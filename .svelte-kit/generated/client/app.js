@@ -1,6 +1,5 @@
 import * as client_hooks from '../../../src/hooks.client.ts';
 
-
 export { matchers } from './matchers.js';
 
 export const nodes = [
@@ -30,15 +29,6 @@ export const dictionary = {
 
 export const hooks = {
 	handleError: client_hooks.handleError || (({ error }) => { console.error(error) }),
-	init: client_hooks.init,
-	reroute: (() => {}),
-	transport: {}
 };
-
-export const decoders = Object.fromEntries(Object.entries(hooks.transport).map(([k, v]) => [k, v.decode]));
-
-export const hash = false;
-
-export const decode = (type, value) => decoders[type](value);
 
 export { default as root } from '../root.svelte';
