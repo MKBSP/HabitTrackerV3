@@ -1,20 +1,9 @@
-import adapter from '@sveltejs/adapter-vercel';
-import preprocess from 'svelte-preprocess';
+import adapter from '@sveltejs/adapter-auto';
 
 /** @type {import('@sveltejs/kit').Config} */
 const config = {
-	preprocess: preprocess({
-		typescript: {
-			tsconfigFile: './tsconfig.json'
-		}
-	}),
 	kit: {
-		adapter: adapter({
-			out: 'build'
-		}),
-		alias: {
-			$lib: 'src/lib'
-		}
+		adapter: adapter()
 	}
 };
 
